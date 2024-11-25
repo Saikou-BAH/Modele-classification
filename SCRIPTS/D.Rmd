@@ -1,0 +1,383 @@
+---
+title: "EXERCIE"
+author: "SAIKOU"
+date: "2024-11-25"
+output: html_document
+---
+
+# CLASSIFICATION AVEC ALGORITHM KMEANS
+
+### Mon Repertoire de Travail
+
+```{r}
+setwd("C:/Users/Saikou/Desktop/3/DATA")
+```
+
+## Importation des données et visualisation :
+
+```{r}
+vt <- read.delim("voitures", sep="")
+```
+
+```{r}
+#Nombres de lignes
+nrow(vt)
+```
+
+```{r}
+#Structure de ma base de données
+str(vt)
+```
+
+Dans notre base de données, nous avons 8 variables indépendantes qui représentent les caractéristiques de chaque marque. Nous constatons que ces variables ne sont pas exprimées dans la même unité de mesure. Il est important de résoudre ce problème, car l’algorithme k-means est sensible aux différences d’unités entre les variables.
+
+```{r}
+#Quelques statistiques descriptives}
+summary(vt)
+```
+
+## Algorithme K-means
+
+C’est une méthode de clustering non supervisée qui permet de regrouper des données similaires. Elle nous permet de former K clusters distincts à partir de nos observations, ainsi on aura un regroupement des données similaires au sein d’un même cluster.
+
+### Representation Graphique
+
+#### Verification des Valeurs Aberantes
+
+Dans notre base de données, on constate une absence de données manquantes . Néamoins, il est important de verifier la présence de valeurs aberrantes, car l’algorithme est sensible à ces valeurs. La présence de valeurs aberrantes pourrait influencer les centres des clusters et donc directement impacter la qualité de notre partionnement.
+
+```{r}
+par(mfrow=c(2, 2))  
+
+# Créez des boxplots pour différentes variables
+boxplot(vt$CYL, main="Boxplot de La Variable CYLINDRE")
+boxplot(vt$LAR, main="Boxplot de La Variable LARGEUR")
+boxplot(vt$PUIS, main="Boxplot de La Variable PUISSANCE")
+boxplot(vt$LON, main="Boxplot de La Variable Longeur")
+
+
+```
+
+```{r}
+par(mfrow=c(2, 2))
+boxplot(vt$POIDS, main="Boxplot de La Variable POIDS")
+boxplot(vt$VITESSE, main="Boxplot de La Variable VITESSE")
+boxplot(vt$ACCEL, main="Boxplot de La Variable ACCELERATEUR")
+boxplot(vt$CO2, main="Boxplot de La Variable CO2")
+
+```
+
+On constate la presence de valeurs aberrantes pour plusieurs de nos variables, cela pourrait avoir des répercussions sur les centres des clusters ainsi que sur la distance euclidienne utilisée par notre algorithme. elles risquent également de biaiser le choix optimal de nos clusters. Pour résoudre ce problème, une solution consiste à effectuer une transformation logarithmique. Toutefois, nous allons travailler sur nos données brutes.
+
+#### Matrice de Corrélation
+
+```{r}
+#Matrice
+vt_numerique <- vt[sapply(vt, is.numeric)]
+library(corrplot)
+matrice_correlation <- cor(vt_numerique)
+corrplot(matrice_correlation, method="number")
+
+```
+
+Nous constatons une corrélation de 0,96 entre le nombre de cylindres d’une voiture et sa puissance, cela suggere une forte corrélation positive entre ces deux variables. Cela signifie qu’en général, lorsque le nombre de cylindres augmente, la puissance du véhicule a tendance à augmenter également. On a une corrélation similaire qui existe entre le nombre de cylindres et les émissions de CO2, suggérant que les véhicules avec un nombre plus élevé de cylindres ont tendance à émettre davantage de CO2.
+
+Cependant, une corrélation de -0,83 est observée entre le nombre de cylindres et l’accélération (temps nécessaire pour atteindre 100 km/h). Ainsi, les véhicules avec un nombre plus élevé de cylindres ont tendance à avoir un temps d’accélération plus court.
+
+Il est essentiel de visualiser ces corrélations, car une forte corrélation peut introduire une redondance, ce qui entraîne une attribution de poids excessive par notre algorithme aux variables fortement corrélées.
+
+```{r}
+#Variance des mes variables
+# Je definis la liste des colonnes que je veux utiliser
+c <-c("CYL","PUIS","LON","LAR","POIDS","VITESSE","ACCEL","CO2")
+# Je calcul la variance pour chaque colonne
+variances <- round(sapply(vt[c], var),2)
+# Affichage 
+tableau<- data.frame(Variable = names(variances), Variance = variances)
+print(tableau)
+
+```
+
+Nous constatons que la variance de chaque variable est non nulle, ce qui est positif. Neamoins, il est important de noter que les variances different enormement. Les variables avec des variances plus élevées auront un impact plus significatif sur la mesure de la distance dans nos analyses.
+
+```{r}
+#Nuages par pairs
+pairs(vt)
+
+```
+
+L’objectif de cette étape est de visualiser les relations entre différentes variables afin de détecter d’éventuels clusters naturels, des regroupements potentiels de points qui presentent des tendances similaires. Par exemple, quand on examine la variable CO2, nous identifions clairement cinq observations qui se distinguent des autres, une observation similaire est également notée pour la variable puissance. Cependant, avec la variable longueur, la détection de tels regroupements devient plus complexe. Lorsqu’on a un grand nombre de variables , l’analyse visuelle des relations devient difficile à l’œil nu. C’est pourquoi il est essentiel d’utiliser un algorithme pour une analyse plus approfondie.
+
+### Modification des données
+
+Comme l’algorithme repose sur la mesure des distances et que nos variables ont des unités différentes, cela risque de biaiser nos résultats. Afin d’éviter ce problème, on standardise les variables pour les ramener à une échelle commune. Cette démarche contribue à rendre l’algorithme plus cohérent et améliore l’interprétation des résultats de clustering.
+
+```{r}
+#Moyenne de mes variables
+print(colMeans(vt))
+```
+
+Nous constatons des valeurs moyennes très differentes, indiquant que nos variables sont mesurées dans des unités différentes. Lors de l’application de l’algorithme, les variables avec une variance élevée auront une influence trés élevée sur les résultats.
+
+#### Standardisation
+
+```{r}
+#Standardisation
+vt_stan<-scale(vt)
+head(vt_stan)
+
+```
+
+#### Determination des Clusters
+
+Il est difficile de choisir un nombre de cluster intuitivement,La strategie simple est de faire evoluer le nombre de classes et surveiller l’evolution de l’inertie intra-classes. Dans notre cas, on observe une augmentation significative jusqu’à 0.49(classe2), le reste des augmentations est moins importantes, comme dans l’analyse k-means nous recherchons le point ou l’augmentation ralentit , considéré comme le point optimal pour le nombre de classes. On pourrait aussi etre tenter de dire qu’on à plutôt deux solutions, une solution à 2 classes ou 3.
+
+```{r}
+a <-c()
+niveaux_cluster <- c()
+for (k in 1:8){
+  t<-kmeans(vt_stan,centers=k)
+  a[k]<-round(t$betweenss/t$totss,digits=2)
+  niveaux_cluster[k] <- k
+}
+resultats <- data.frame(Nombredecluster = niveaux_cluster ,Inertie = a)
+print(resultats)
+
+```
+
+Une autre méthode couramment utilisée est la méthode du coude (Elbow Method), qui repose sur une approche graphique. Pour chaque valeur de k, on mesure la somme des carrés des distances intra-cluster, puis on trace le graphique. Le point du coude, représente le nombre de clusters à partir duquel la réduction de la variance n’est plus significative. C’est ce point qui est généralement choisi comme nombre optimal de clusters.
+
+```{r}
+#Methode du coude
+library(factoextra)
+result <- fviz_nbclust(vt_stan, FUNcluster = kmeans, method = "wss")
+# résultats
+print(result)
+```
+
+Ici, le point du coude identifié est au nombre de clusters = 3, avec une chute significative de la courbe entre 1 et 3. Néamoins, l’interprétation peut varier entre différentes personnes. Une autre méthode est l’utilisation du score de silhouette pour évaluer la qualité des clusters, qui varie entre [-1, 1]. On considère la valeur de “k” ayant le score de silhouette le plus proche de 1 comme le nombre optimal de clusters.
+
+```{r}
+library(factoextra)
+# basé sur la minimisation de la somme des carrees des ecarts à l'interieur des clsuters
+# la méthode de la silhouette pour k-means
+result <- fviz_nbclust(vt_stan, FUNcluster = kmeans, method = "silhouette")
+# Les resultats
+print(result)
+```
+
+Les deux méthodes fournissent des résultats divergents. La méthode de la silhouette, qui mesure la qualité de la séparation entre les clusters, suggère un nombre optimal de clusters égal à 2. Dans ce cas, nous allons prendre en compte les deux suggestions et évaluer la pertinence des clusters générés pour chaque configuration (2 et 3 clusters) afin de prendre une décision éclairée.
+
+```{r}
+set.seed(123)
+fviz_nbclust(vt_stan, kmeans, nstart = 14, method = "gap_stat", nboot = 500)+
+labs(subtitle = "Gap statistic method") 
+```
+
+Cette méthode suggère un cluster optimal avec k=1, ce qui pourrait indiquer que la structure de nos données est homogène et ne justifie pas la création de clusters. La statistique du gap compare la dispersion intra-cluster réelle avec celle générée aléatoirement.
+
+#### Procédure K-Means
+
+L’algorithme k-means est un processus itératif visant à minimiser la somme des distances entre chaque observation et le centroïde. Pour un debut, nous fixons le nombre de clusters à k=2.
+
+```{r}
+set.seed(123)
+km<-kmeans(vt_stan,centers=2,nstart=40000)
+print(km)
+```
+
+L’algorithme k-means a formé 2 clusters, le premier avec 17 Marques et le second avec 3 marques. A travers la moyenne des clusters on obtient pour chaque classe la moyenne des variables de nos observations, si on regarde plus en detail, on observe que Les voitures du Cluster 1 ont quelques caractéristiques spécifiques. En moyenne, elles sont :
+
+-   Plus longues que la moyenne.
+
+-   Moins larges que la moyenne.
+
+-   Un nombre de cylindres légèrement inférieur à la moyenne.
+
+-   Une puissance légèrement inférieure à la moyenne.
+
+-   Une vitesse légèrement inférieure à la moyenne.
+
+-   Une accélération légèrement plus élevée que la moyenne.
+
+-   Émettent légèrement moins de CO2 que la moyenne.
+
+Les voitures du Cluster 2 ont quelques caractéristiques spécifiques. En moyenne, elles sont :
+
+-   Plus de cylindres que la moyenne.
+
+-   Avec une puissance plus élevée que la moyenne.
+
+-   Plus courtes que la moyenne.
+
+-   Plus larges que la moyenne.
+
+-   Plus lourdes que la moyenne.
+
+-   Avec une vitesse plus élevée que la moyenne.
+
+-   Avec une accélération nettement inférieure à la moyenne.
+
+-   Émettant nettement plus de CO2 que la moyenne.
+
+Le vecteur de clustering indique à quel cluster chaque observation appartient. Au sein du cluster 2, on a les marques suivantes : FERRARI JAGUARF FORDMUSTANG. On a donc dans ce cluster des voitures de sport avec des caracteristques: cylindrées élevées, une puissance importante, une accélération rapide et des émissions de CO2 relativement élevées peuvent être regroupées ensemble. La qualité du partitionnement est de 49,3%.
+
+```{r}
+set.seed(123)
+km1<-kmeans(vt_stan,centers=3,nstart=1)
+print(km1)
+```
+
+On observe une augmentation de la qualité du partitionnement, ce qui est cohérent puisque nous augmentons le nombre de clusters. Le cluster qui comprenait les 3 voitures reste inchangé, tandis que l’algorithme a partitionné le deuxième cluster en deux sous-clusters distincts. Cette division plus fine nous fournit des informations plus détaillées sur les similarités et les différences entre les observations au sein du cluster qui comprenait 17 marques.
+
+```{r}
+vt1 <- vt[order(vt$PUIS,vt$VITESSE,vt$CO2), ]
+# Affichage
+print(head(vt1, 9))
+```
+
+Dans ce cluster, on observe qu’il regroupe les voitures peu puissantes, avec une vitesse modérée et émettant peu de CO2. Cependant, il y’a une erreur concernant la BMW S3, classée à tort dans le cluster 3.
+
+##### Groupe d'Appartenance :
+
+```{r}
+#je colorie selon le groupe d'appartenance pour k=2
+pairs(vt,col=c('blue','red')[km$cluster])
+```
+
+```{r}
+#je colorie selon le groupe d'appartenance pour k=3
+pairs(vt,col=c('red','blue','green')[km1$cluster])
+```
+
+En observant les résultats avec k=2, on constate que l’algorithme k-means parvient bien à capturer les relations que nous avions identifiées avec les variables CO2, vitesse, et puissance. Cependant, avec k=3, on observe des chevauchements pour l’ensemble des variables, on en conclut que certaines marques sont difficiles à distinguer en fonction de nos variables. Cela met en évidence la difficulté du choix partitionnement quand certaines observations présentent des caracteristiques similiaires importantes.
+
+```{r}
+#calcul des moyennes conditionnels
+print(aggregate(x=vt,by=list(km$cluster),FUN=mean))
+```
+
+```{r}
+print(aggregate(x=vt,by=list(km1$cluster),FUN=mean))
+```
+
+Pour k=2, on observe que le groupe 2 a une vitesse moyenne de 281.6667, tandis que le groupe 1 a une vitesse moyenne de 189.3529. Si on regarde la longueur et la largeur, on constate que les moyennes entre les deux groupes sont proches. Les moyennes conditionnelles donnent des informations sur les caractéristiques moyennes des observations de chaque cluster, cela permet de mettre en évidence les differences spécifiques entre les groupes.
+
+```{r}
+library(NbClust)
+NbClust( data=vt_stan, distance="euclidean", method="kmeans")
+```
+
+Pour déterminer explicitement le nombre optimal de clusters, on peut utiliser plusieurs indices pour différents nombres de clusters. dans notre cas La majorité d’entre eux suggèrent que 2 est le nombre optimal, avec une partition de 5 pour le groupe 1 et 15 pour le groupe 2.
+
+##### Verfication de la qualté de la segmentation
+
+```{r}
+library(cluster)
+metric<-silhouette(km$cluster,dist(vt_stan, "euclidean"))
+print(summary(metric))
+```
+
+```{r}
+metric1<-silhouette(km1$cluster,dist(vt_stan, "euclidean"))
+print(summary(metric1))
+```
+
+Le coefficient de silhouette varie entre [-1, 1], et plus la moyenne du coefficient est proche de 1, meilleure est la qualité de la segmentation. On observe que pour k=2, nous avons une meilleure séparation avec une moyenne de 0.54, tandis que pour k=3, la moyenne est de 0.3454. Ces résultats confirment la tendance observée précédemment, indiquant que k=2 est une segmentation de meilleure qualité pour notre ensemble de données.
+
+##### Graphe
+
+```{r}
+k<-fviz_cluster(km ,data=vt_stan)+ggtitle("k=2")
+k1<-fviz_cluster(km1, data=vt_stan)+ggtitle("k=3")
+library("gridExtra")
+grid.arrange(k,k1,nrow=2)
+
+```
+
+Avec k=2, on observe une séparation claire des groupes dans l’espace des variables. Cependant, pour k=3, on constate un chevauchement, indiquant une certaine difficulté dans la classification.
+
+Maintenant, je vais associer chaque marque à son groupe respectif.
+
+```{r}
+vt$Cluster<-as.factor(km$cluster)
+print(vt)
+```
+
+Comme le nombre de cluster qu’il faut utiliser n’est pas clair j’ai utilisé un autre algorithme qui est une variante du kmeans qui attribue chaque observation un degré d’appartenance à tous les clusters, le degré est compris entre [0,1].
+
+```{r}
+library(e1071)
+num_cl <- 2
+res <- cmeans(vt_stan, num_cl, m = 2, verbose = TRUE)
+```
+
+```{r}
+# les centres des clusters
+cat("Centres des clusters :\n")
+## Centres des clusters :
+print(res$centers)
+```
+
+```{r}
+#  les degrés d'appartenance 
+cat("Degrés d'appartenance des points aux clusters :\n")
+## Degrés d'appartenance des points aux clusters :
+print(res$membership)
+```
+
+On conclut donc il serait judicieux de prendre k=2 et avec 5 marques pour le groupe1 et 15 pour le second.
+
+## Classification avec la Methode de WARD :
+
+C’est une methode qui va regrouper les observations sur le critere de la distance separant les points.
+
+### Calcul de la matrice de distance euclidienne :
+
+```{r}
+# matrice de distance euclidienne entre les observations
+distance_matrix <- dist(vt_stan)
+```
+
+### Application de la méthode de Ward pour la classification hiérarchique :
+
+```{r}
+#Application de la méthode de Ward pour la classification hiérarchique pour minimiser la variance intra-cluster. 
+hierarchical_model <- hclust(distance_matrix, method = "ward.D2")
+```
+
+### Tracé du dendogramme :
+
+```{r}
+plot(hierarchical_model, main = "Dendrogramme - Classification Hiérarchique", xlab = "Observations", ylab = "Distance euclidienne", sub = NULL)
+```
+
+On observe qu’à la hauteur 12 du dendogramme, il divise les observations en 2, c’est le resultat qu’on avait avec la methode kmeans pour k=2. Ensuite à la hauteur 7 pour la partie 2, on a egalement une division des observations en 2. Pour la premiere classe on obtient le meme partinnionnement qu’on avait avec kmeans. Pour trouver le nombre optimal de cluster on peut visualsier l’inertie en fonction du nombre de clusters.
+
+```{r}
+# je coupe le dendogramme en fonction du nombre de classes que je souhaite 
+cut_dendrogram <- cutree(hierarchical_model, k = 2)
+
+
+# les étiquettes de classe 
+df_with_labels <- cbind(df, Cluster = cut_dendrogram)
+#je calcul l'inertie 
+
+inertie <- sort(hierarchical_model$height, decreasing = TRUE)
+
+
+plot(inertie[1:10], type = "s", xlab = "Nombre de classes", ylab = "Inertie")
+points(c(2, 3, 5,6), inertie[c(2, 3, 5,6)], col = c("green3", "red3", "blue3","yellow"), cex = 2, lwd = 3)
+```
+
+On observe donc 4 sauts qui sont assez elevés.
+
+```{r}
+plot(hierarchical_model, labels = FALSE, main = "Partition en 2, 3,5 ou 6 classes", xlab = "", ylab = "", sub = "", axes = FALSE, hang = -1)
+rect.hclust(hierarchical_model, 2, border = "green3")
+rect.hclust(hierarchical_model, 3, border = "red3")
+rect.hclust(hierarchical_model, 5, border = "blue3")
+rect.hclust(hierarchical_model, 6, border = "purple")
+```
+
+Suite à l’analyse hiérarchique, On a observé 4 sauts( 2,3,5 et 6), le saut le plus eleveé est le partitionnement pour en 2 clusters, qui montre une meilleur cohesion.En utilisant l’indice de silhouette, on a que le nombre optimal de clusters est effectivement 2. En conclsuion le choix du cluster est tres flou, la meilleure solution serait d’avoir une idée metier des experts du domaine ou d’explorer davantage la nature des données.

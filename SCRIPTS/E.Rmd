@@ -1,0 +1,134 @@
+---
+title: "E"
+author: "SAIKOU"
+date: "2024-11-25"
+output:
+  word_document: default
+  html_document: default
+---
+
+# Importation des données
+
+```{r}
+voitures<- read.delim("voitures", sep="")
+
+```
+
+```{r}
+#Structure de ma base de données
+str(voitures)
+```
+
+
+```{r}
+noms_variables <- names(voitures)
+print(noms_variables)
+
+```
+```{r}
+#res.pca<-PCA(voitures,graph=FALSE)
+#print(res.pca)
+#p_inertie <- res.pca$eig 
+#p_inertie
+
+```
+
+
+On observe que le pourcentage expliqué par le premier plan factoriel est d'environ 89%, qui est la somme de la variance expliquée par les deux premiers facteurs.
+
+Il est de 95 % pour les trois premiers est d'environ de 95%.
+
+```{r}
+#plot(res.pca,choix="var", cex=0.7)
+```
+
+Axe principal n°1 : axe horizontal 
+Axe principal n°2 : axe vertical 
+Le centre est l'individu moyen
+
+
+On observe que la quasi-totalité des variables sont corrélées positivement avec le 1er axe (sauf la variable accel) : les coordonnées sur le 1er axe de toutes les variables sont positives donc elles se retrouvent toutes à droite. 
+
+
+On a donc un effet taille (toutes les variables sont corrélées avec un axe). Si on est très à droite ça veut dire que toutes les valeurs des variables sont plutôt grandes. 
+
+
+La variable “accel” représente l’accélération des véhicules et elle est mesuré en termes de temps. Sa corrélation négative avec l’axe 1 montre que plus le temps est petit et plus une voiture est rapide. Si la valeur de “accel” est faible, cela voudrait dire que la voiture accélère rapidement. À l’inverse, si la valeur de “accel” est élevée, cela voudrait dire que la voiture prend du temps pour accélérer. 
+Les deux axes ne sont pas représentés parfaitement par une variable spécifique car aucune des variables n’est couchée sur un axe. 
+
+
+L’axe 1 est bien représenté par le cylindre, or, ce n’est pas la seule variable qui peut l’expliquer. Mais c’est celle qui explique le mieux l’axe étant donnée que c’est la plus proche. En effet, cet axe est le mieux représenté par le cylindre mais peut être aussi expliqué par l’émission de C02, la puissance ou encore la vitesse.
+La cylindrée est une caractéristique importante des moteurs de véhicules, et elle est souvent associée à la puissance du moteur. En général, une cylindrée plus importante peut indiquer un moteur plus puissant. 
+
+
+
+Ainsi, le premier axe pourrait nous indiquer les voitures les plus performantes. À droite on aura les meilleures voitures (avec une valeur importante pour des variables comme “cyl”, “CO2”, “vitesse” et “puissance” et une valeur faible pour la variable “accel”) et à gauche les moins bonnes (les valeurs des variables “cyl”, “CO2”, “vitesse” et “puissance” sont plus faibles sauf la variable “accel” qui sera plus élevé). L’axe 1 opposerait donc les voitures de sport, des voitures utilitaires. 
+
+
+
+Par construction les axes sont orthogonaux et si on a un effet taille sur le premier axe, on aura un effet forme sur le deuxième. 
+L’axe 2 est plutôt bien représenté par la longueur, en effet, c’est la variable la plus proche de cet axe. 
+Étant donné les performances de chaque voiture, l’axe 2 pourrait séparer les grandes et longues voitures (qui sont plus lourdes) de celles qui sont plus légères et rapides. 
+
+
+```{r}
+#plot(res.pca,choix="ind", cex=0.7)
+```
+
+
+```{r}
+#res.pca$ind$cos2[,1:2]
+#res.pca$ind$cos2[,2:3]
+#plot(res.pca,choix="ind", cex=0.7, axes=2:3)
+```
+
+Il faut faire la somme des cosinus au carré (de chaque axe) pour avoir la qualité de la projection sur le premier plan factoriel. 
+
+Les 3 individus les mieux représentés sont AUDIA1, avec une somme des cosinus carré d’environ 0,98, puis nous avons ALPHAMITO avec une somme des cosinus carré d’environ 97%. Enfin, nous avons la DACIA avec une somme des cosinus carré d’environ 0,95. 
+
+On constate que tous les individus semblent être bien représentés sur le premier plan factoriel c’est-à-dire qu’ils ont presque tous une somme des cosinus carré supérieur à 0,5 sauf la PEUGEOTRCZ et la SUBARU. 
+En effet, La somme des cosinus au carré pour l’individu PEUGEOTRCZ est d’environ 0,13 et pour l’individu SUBARU est d’environ 0,26, ce qui est largement en dessous de 0,5. 
+Ainsi, ils se sont fait écraser par la projection et se retrouvent donc au centre comme nous pouvons le voir sur le graphique. 
+
+Si on regarde les axes 2 et 3, les individus PEUGEOTRCZ et SUBARU restent mal représentés. En effet, la somme des cosinus au carrés pour l’individu PEUGEOTRCZ est d’environ 0,23<0,5 et pour l’individu SUBARU elle est d’environ 0,17<0,5, ils sont donc écrasés par la projection et vont se retrouver au centre du graphique.
+
+
+Excepté certains individus, tels que LANDROVER, HYUNDAI, LANCIA et HONDA, tous les individus se retrouvent au centre, écrasés par la projection. En effet, leur somme des cosinus carré est inférieure à 0,5.
+
+Il n’y a aucune variable couché sur l’axe 2, donc ce qui représenterait le plus cet axe serait la longueur. Ainsi, plus une voiture est située vers le haut et plus elle est grande par rapport à la moyenne (en termes de poids, de longueur et de largeur). 
+Ainsi, tout en bas du graphique on retrouve le Fordmustang qui est une voiture de sport donc elle sera moins longue que la moyenne. À l’inverse, Lancia est situé tout en haut du graphique. Certains modèles qu’elle a produits comme les SUV ou les Berlines sont plus grands
+
+
+De même pour l’axe 1, aucune variable n’est couchée dessus. Ainsi on pourrait penser que l’axe 1 est représenté par le cylindre de la voiture étant donné que cette variable est la plus proche de l’axe. En effet, plus les voitures se situent vers la droite, plus elles ont une grosse cylindrée. Par exemple, Ferrari a une plus grosse cylindrée que la Renault. 
+
+
+Mais il est également représenté par les variables “CO2”, “PUIS” et  “VITESSE”. Une voiture située à droite du graphique regroupe des valeurs élevées pour chacune de ces variables. Or, une voiture qui regroupe une valeur élevée pour ces 4 variables a le profil d’une voiture de sport. On peut voir par exemple que la voiture qui est située le plus à droite est la Ferrari qui est une voiture de sport. La deuxième voiture située la plus à droite est la Ford Mustang. Ensuite, on retrouve la Jaguarf. Les modèles de ces marques sont souvent associés à des performances élevées, offrant des moteurs puissants, une accélération rapide et des caractéristiques sportives.
+
+Sur le graphique des individus, on peut voir que les voitures citadines sont concentrées sur la gauche. 
+Les voitures citadines sont généralement compactes et légères, adaptées à la conduite en milieu urbain. Les individus situées à gauche auront des valeurs faibles pour les variables “CYL”, “CO2”, “PUIS” et “VITESSE”. À l’inverse, plus une voiture est située à gauche et plus sa valeur pour la variable “ACCEL” sera élevée. Ainsi, les voitures situées à gauche polluent moins, ne sont pas très rapides et ont des moteurs souvent de faible puissance.
+Si une voiture est située à gauche mais également vers le bas, cela veut dire qu’elle est plus petite, plus légère et moins longue que la moyenne. 
+
+
+Ainsi, les individus situés en bas à gauche ont tendance à être plus petits en termes de dimensions, plus légers et avec des moteurs moins puissants, ce qui est caractéristique des voitures citadines.
+
+
+La voiture qui est le plus en bas à gauche est la FIAT500. Cela est cohérent avec ce qui a été dit au dessus. C’est une voiture citadine, qui est adaptée à une utilisation en milieu urbain, avec une émission réduite de CO2. Elle est conçue pour être légère, maniable et économique.
+
+
+Premièrement, on peut voir que l’axe 1 oppose les marques de voitures de sport (à droite) aux marques de voitures citadines (à gauche). Ainsi, les marques situées le plus à droite telles que FERRARI ou encore FORDMUSTANG, produisent des voitures avec des caractéristiques similaires. C’est-à-dire des voitures rapides, qui polluent beaucoup et avec des moteurs très puissants. 
+FERRARI a la cylindrée la plus élevée (6262 cm³), suivi par la FORDMUSTANG (4951 cm³) donc elles ont des moteurs avec une grande capacité. La vitesse maximale que peut atteindre la FERRARI est de 335 km/h et celle de la FORDMUSTANG est de 250 km/h, ce qui montre qu’elles sont rapides. La variable “ACCEL” mesuré en seconde représente le temps nécessaire pour que la voiture atteigne une vitesse de 100km/h. Ainsi, la FERRARI et la FORDMUSTANG ont les valeurs les plus basses pour cette variable. Cependant, leur émission de C02 sont les plus élevée (380 g/km pour la FERRARI et 299 g/km pour la FORDMUSTANG). 
+
+À l’inverse, les marques situées le plus à gauche telles que FIAT500 ou encore DACIA, produisent des voitures avec des caractéristiques similaires c’est-à-dire pas très rapides, qui polluent peu et avec des moteurs peu puissants. 
+La FIAT500 a une cylindrée de 1242 cm³ et la DACIA a une cylindrée de seulement 89, ce qui est vraiment peu élevé en comparaison avec la FERRARI et la FORDMUSTANG. La vitesse maximale que chaque voiture peut atteindre est également beaucoup plus faible. Pour la FIAT500, elle est de 160 km/h et pour la DACIA, elle est de 175 km/h. Enfin, leur émission de CO2 par kilomètre est relativement faible. Leur valeur est de 115 g/km pour la FIAT500 et de 116 g/km pour la DACIA. 
+
+Ensuite, l’axe 2 oppose les marques des voitures selon la longueur des voitures produites. Ainsi, les marques situées en haut telles que LANCIA ou LANDROVER produisent des voitures plus longues mais également plus lourdes et larges que les marques situées tout en bas telles que FORDMUSTANG ou FIAT500 par exemple. 
+En effet, LANCIA mesure 522cm de long et 200cm de large ce qui lui mène à un poids total de 2315kg, de même pour LANDROVER qui pèse 2570kg, et mesure 483cm de long et 191cm de large. Ces deux marques représentent donc les voitures les plus massives et les plus lourdes. 
+A l’inverse, FORDMUSTANG et FIAT500 sont beaucoup plus petites et légères. On l’observe avec les données, FIAT500 se caractérise par son poids léger soit 905kg et sa petite taille soit 355cm de long sur 163cm de large. De même pour FORDMUSTANG qui mesure 272cm de long sur 192cm de large. 
+
+On observe une proximité entre la DACIA, la ALPHAMITO et l’AUDIA1. Ceux sont les 3 individus les mieux représentés avec une somme des cosinus carré beaucoup plus élevé que 0,5. Ainsi, leur proximité est justifiée. Ce sont trois marques de voitures qui produisent des voitures citadines (faible émission de CO2, faible capacité du moteur, vitesse maximale pas très élevée). 
+
+On peut aussi s’intéresser aux individus opposés comme FIAT500 et FERRARI sur le premier axe.
+FERRARI présente toutes les caractéristiques d’une voiture de sport : elle a la plus grosse cylindrée soit 6262cm³ et la plus grosse puissance soit 660km/h avec un faible temps d’accélération soit 4,1s pour atteindre 100km/h. 
+A l'inverse, FIAT 500 est considéré comme une voiture citadine notamment grâce à sa taille compacte. En effet, celle-ci mesure 355cm de long et 163cm de large avec un temps d’accélération de 12,9 secondes pour atteindre les 100 km/h, soit 3 fois plus que la FERRARI.
+
+
